@@ -1,5 +1,5 @@
 core = "6.x"
-description = "Enabling JUST this module. It will enable: CAS (including the phpCAS library), CAS Attributes, LDAP Integration. Implements: standard UCB configuration."
+description = "Installs and auto-configures everything you need to use CAS/Calnet with your site. (Enable JUST this module. It will enable: CAS, CAS Attributes, LDAP Integration, Token. Disabling then uninstalling JUST this module will reverse the process.)"
 dependancies[] = token
 name = " UCB CAS"
 package = "Central Authentication Service"

@@ -41,7 +41,11 @@ function ucb_cas_install() {
    *  tables exist. There are probably other ways to skin this cat...
    */
   drupal_install_modules($sub_modules);
-  drupal_set_message("Installed ucb_cas dependencies: " . implode(', ', $sub_modules), 'status');
+  drupal_set_message(t("Installed ucb_cas dependencies: ") . implode(', ', $sub_modules), 'status');
+  //drush friendly links
+  drupal_set_message("You can now login using cas at ". l(t("/cas"), 'cas') . '. (' . t("Do this in a different browser or logout of your admin account first.") . ')');
+  drupal_set_message(t("View UCB CAS recommendations at ") . l(t("/admin/user/ucbcas"), 'admin/user/ucbcas') . '.');
+  
 
   /* Login Blocks */
   // disable user.module's login block for all themes

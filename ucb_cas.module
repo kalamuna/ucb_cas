@@ -103,9 +103,6 @@ function ucb_cas_login_blocks_recommendations() {
 
   $login_blocks_no_link_why = "<p>This way there is no link encouraging people who shouldn't be logging in to your site to authenticate. This prevents unwanted accounts from being created on your site.</p>";
 
-	$login_blocks = ucb_cas_login_blocks_check();
-	//$out .= '<h3>' . t('Login Blocks') . '</h3>';
-	//$out .= '<legend class="collapse-processed">' . t('Login Blocks') . '</legend>';
 	$login_blocks_text = <<<EOT
 <p>Depending on your use case, you may or may not want to display a login block on your site.</p>
 EOT;
@@ -148,9 +145,10 @@ EOT;
 <ul>
 <li>Since users need to authenticate to your site, you should consider <a href="/admin/build/block" target = "_new">enabling a login block</a>. 
 Find the User Login block and set a region for it. (Then reload this page.)</li>
+<li>Alternatively, add a login link via your theme.</li>
 EOT;
 
-	
+	$login_blocks = ucb_cas_login_blocks_check();	
 	if (count($login_blocks) > 0) {
     $out .= '<h4>' . t('Currently you have login blocks enabled') . '</h4>';
 		$out .= '<table>';
@@ -180,11 +178,13 @@ EOT;
 /**
  * Check login blocks
  */
+
 function ucb_cas_login_blocks_check() {
-	
+  $login_blocks = array();
+  //D6: block.module can't be disabled. Required by core.
+	//TODO: ucb_mma needs this too	
   $theme = variable_get('theme_default', '');
   $blocks = _block_rehash($theme);
-  $login_blocks = array();
   foreach ($blocks as $b) {
   	if ((stripos($b['info'], 'login') !== FALSE) && ($b['region'] != -1)) {
   		$login_blocks[$b['module']] = array($b['info'], $b['region']);
