@@ -329,6 +329,11 @@ CAS Configuration at admin/user/cas:
 
      You may want to customize these. Feel free...
 
+  */logout takes you to /caslogout*
+
+     This is considered best practice on campus.  If you need to change 
+     this remove the alias at /admin/build/path
+
   *Users cannont change password*
 
      Unchecking this is very likely to cause confusion.  Users should
