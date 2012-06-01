@@ -42,6 +42,12 @@ function ucb_cas_install() {
    */
   drupal_install_modules($sub_modules);
   drupal_set_message(t("Installed ucb_cas dependencies: ") . implode(', ', $sub_modules), 'status');
+  
+  //we need path for path_set_alias
+  if (!module_exists('path')) {
+    drupal_install_modules(array('path'));
+    drupal_set_message("Enabling the path module.");
+  }
   //drush friendly links
   drupal_set_message("You can now login using cas at ". l(t("/cas"), 'cas') . '. (' . t("Do this in a different browser or logout of your admin account first.") . ')');
   drupal_set_message(t("View UCB CAS recommendations at ") . l(t("/admin/user/ucbcas"), 'admin/user/ucbcas') . '.');
@@ -115,6 +121,9 @@ node/*/edit/*");
   else {
   	variable_set("cas_login_form",  "2");
   }
+  
+  // alias logout to caslogout
+  path_set_alias('caslogout', 'logout');
 
 }
 
@@ -137,9 +146,14 @@ function ucb_cas_uninstall() {
     drupal_uninstall_module($sm);
   }
   drupal_set_message("Uninstalled ucb_cas dependencies: " . implode(', ', $sub_modules), 'status');
+  drupal_set_message("Leaving the path module enabled.");
 
   /* Clear settings */
   // most settings are removed by uninstalling the sub modules.
   variable_del("ucb_cas_sub_modules");
+  
+  // remove alias logout to caslogout
+  path_set_alias('caslogout', NULL);
+
 }
 

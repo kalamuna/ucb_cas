@@ -1,9 +1,10 @@
 ucb_cas NEXT RELEASE
 =====================
+* DUPCODE-2: alias logout to caslogout
 * Friendly messages with links added to hook_install
-DUPCODE-8: UCB CAS admin page: Reommendations about login blocks
-DUPCODE-1: Admin back door to prevent user1 lockouts
-DUPCODE-7: remove https://net-auth.berkeley.edu/cgi-bin/krbcpw as logout location 
+* DUPCODE-8: UCB CAS admin page: Reommendations about login blocks
+* DUPCODE-1: Admin back door to prevent user1 lockouts
+* DUPCODE-7: remove https://net-auth.berkeley.edu/cgi-bin/krbcpw as logout location 
 
 * Remove $sub_modules variable_get/set and use a PHP constant.
   Required for Pantheon install profile compatibility.
