@@ -4,9 +4,13 @@ package = Testing
 core = 6.x
 hidden = TRUE
 
-; Information added by drupal.org packaging script on 2011-04-28
-version = "6.x-3.x-dev"
+; Normally one should not enable both CAS and CAS Server. However, to reduce
+; code duplication we use several themes defined by that module.
+dependencies[] = cas_server
+
+; Information added by drupal.org packaging script on 2012-05-09
+version = "6.x-3.2"
 core = "6.x"
 project = "cas"
-datestamp = "1303949059"
+datestamp = "1336594850"
 

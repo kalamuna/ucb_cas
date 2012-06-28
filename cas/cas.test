@@ -13,8 +13,18 @@ class CasTestHelper extends DrupalWebTestCase {
    *
    * Creates an administrative user and downloads phpCAS.
    */
-  function setUp($modules = array()) {
-    $modules = array_merge(array('cas', 'cas_test'), $modules);
+  function setUp() {
+    // Install modules needed for this test. This could have been passed in as
+    // either a single array argument or a variable number of string arguments.
+    // @todo Remove this compatibility layer in Drupal 8, and only accept
+    // $modules as a single array argument.
+    $modules = func_get_args();
+    if (isset($modules[0]) && is_array($modules[0])) {
+      $modules = $modules[0];
+    }
+
+    // cas_test requires the CAS Server module.
+    $modules = array_merge(array('cas', 'cas_test', 'cas_server'), $modules);
     parent::setUp($modules);
 
     // Tests will fail unless clean URLs are enabled, due to an incompatibility
@@ -25,7 +35,7 @@ class CasTestHelper extends DrupalWebTestCase {
     $this->admin_user = $this->drupalCreateUser(array('administer users', 'administer cas'));
 
     // Download and extract in PHPCAS.
-    $this->downloadExtractPhpCas('1.2.1');
+    $this->downloadExtractPhpCas('1.2.2');
   }
 
   /**
