@@ -5,7 +5,7 @@ function ucb_cas_requirements($phase) {
   $requirements = array();
   $t = get_t();
   $sub_modules = explode(',', SUBMODULES);
-  
+
   if ($phase == 'install') {
     $paths = array();
     foreach ($sub_modules as $sm) {
@@ -31,10 +31,11 @@ function ucb_cas_requirements($phase) {
 }
 
 function ucb_cas_install() {
+  global $base_url;
   /* Install modules */
-	$sub_modules = explode(',', SUBMODULES);  
+  $sub_modules = explode(',', SUBMODULES);
 
-  /* 
+  /*
    *  Why not just make the sub_modules dependencies of ucb_cas? Since
    *  we inject config into schemas created by these modules, we need
    *  to drupal_install_modules() so that we know for sure that the target
@@ -42,7 +43,7 @@ function ucb_cas_install() {
    */
   drupal_install_modules($sub_modules);
   drupal_set_message(t("Installed ucb_cas dependencies: ") . implode(', ', $sub_modules), 'status');
-  
+
   //we need path for path_set_alias
   if (!module_exists('path')) {
     drupal_install_modules(array('path'));
@@ -51,28 +52,47 @@ function ucb_cas_install() {
   //drush friendly links
   drupal_set_message("You can now login using cas at ". l(t("/cas"), 'cas') . '. (' . t("Do this in a different browser or logout of your admin account first.") . ')');
   drupal_set_message(t("View UCB CAS recommendations at ") . l(t("/admin/user/ucbcas"), 'admin/user/ucbcas') . '.');
-  
 
-  /* Login Blocks */
-  // disable user.module's login block for all themes
-  //TODO not working:
-  //db_query("UPDATE {blocks} SET status = %d, region = '%s' WHERE module = '%s' AND delta = '%s'", 0, '', 'user', '0');
-  // enable cas.module's login block 
-  //db_query("UPDATE {blocks} SET status = %d, region = %s WHERE module = '%s' AND delta = '%s' AND theme = %s", 1, 'left', 'cas', '0', 'garland');
+  /**** Settings ****/
+  /* LDAP */
+  $prod_ldap_server = 'ldap.berkeley.edu';
+  $test_ldap_server = 'ldap-test.berkeley.edu';
 
-  /* Settings */
-  db_query("INSERT INTO `ldapauth` (`sid`, `name`, `status`, `server`, `port`, `tls`, `encrypted`, `basedn`
-  , `user_attr`, `mail_attr`, `binddn`, `bindpw`, `login_php`, `filter_php`, `weight`, `ldapdata_binddn`
-  , `ldapdata_bindpw`, `ldapdata_rwattrs`, `ldapdata_roattrs`, `ldapdata_mappings`, `ldapdata_attrs`
-  , `ldapdata_filter_php`, `ldapgroups_in_dn`, `ldapgroups_dn_attribute`, `ldapgroups_attr`, `ldapgroups_in_attr`
-  , `ldapgroups_as_entries`, `ldapgroups_entries`, `ldapgroups_entries_attribute`, `ldapgroups_mappings`
-  , `ldapgroups_mappings_filter`, `ldapgroups_filter_php`, `ldapgroups_groups`) 
-  VALUES
-  (1, 'ldap-test.berkeley.edu', 1, 'ldap-test.berkeley.edu', 389, 0, 0, 'ou=people,dc=berkeley,dc=edu', 'uid', 'mail'
-  , '', '', NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL),
-  (2, 'ldap.berkeley.edu', 1, 'ldap.berkeley.edu', 389, 0, 0, 'ou=people,dc=berkeley,dc=edu', 'uid', 'mail', '', '', NULL, NULL
-  , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL)
-  ");
+  //If they had ldap installed earlier they might already have ucb ldap servers defined
+  //if so disable them and add ones we know to be correct.
+  $result_max = db_query("SELECT MAX(sid) as max_sid from `ldapauth`");
+  $max_sid = db_result($result_max);
+  //var_dump($max_sid);
+  //FIXME: printf *&$#!
+  //$result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN (%prod, %test)", array('%prod' => $prod_ldap_server, '%test' => $test_ldap_server));
+  //$result = db_query("SELECT sid, name FROM  {ldapauth} WHERE server IN (%s, %s)", array($prod_ldap_server, $test_ldap_server));
+  $result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN ('$prod_ldap_server', '$test_ldap_server')");
+
+  $i=1;
+  while ($r = db_fetch_array($result)) {
+    $sid = $max_sid + $i;
+    update_sql("UPDATE ldapauth set sid = $sid, name = '". $r['name'] . "-DISABLED', status = 0 WHERE sid = " . $r['sid']);
+    $i++;
+    //Notify the user
+    drupal_set_message(t("Your ldap servers have been updated at ") . l("/admin/settings/ldap/ldapauth/list", '/admin/settings/ldap/ldapauth/list') . '.', 'status', FALSE);
+    watchdog('ucb_cas', "Replaced existing ldap server: %server", array('%server' => $r['name']), WATCHDOG_NOTICE, l(t("View LDAP Servers"), $base_url . '/admin/settings/ldap/ldapauth/list') );
+  }
+
+  /*
+   * ucb_envconf-6.x depends on these sids being 1 (test) and 2 (prod). 
+   */
+   db_query("INSERT INTO `ldapauth` (`sid`, `name`, `status`, `server`, `port`, `tls`, `encrypted`, `basedn`
+   , `user_attr`, `mail_attr`, `binddn`, `bindpw`, `login_php`, `filter_php`, `weight`, `ldapdata_binddn`
+   , `ldapdata_bindpw`, `ldapdata_rwattrs`, `ldapdata_roattrs`, `ldapdata_mappings`, `ldapdata_attrs`
+   , `ldapdata_filter_php`, `ldapgroups_in_dn`, `ldapgroups_dn_attribute`, `ldapgroups_attr`, `ldapgroups_in_attr`
+   , `ldapgroups_as_entries`, `ldapgroups_entries`, `ldapgroups_entries_attribute`, `ldapgroups_mappings`
+   , `ldapgroups_mappings_filter`, `ldapgroups_filter_php`, `ldapgroups_groups`)
+   VALUES
+   (1, 'ldap-test.berkeley.edu', 1, 'ldap-test.berkeley.edu', 389, 0, 0, 'ou=people,dc=berkeley,dc=edu', 'uid', 'mail'
+   , '', '', NULL, NULL, 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL),
+   (2, 'ldap.berkeley.edu', 1, 'ldap.berkeley.edu', 389, 0, 0, 'ou=people,dc=berkeley,dc=edu', 'uid', 'mail', '', '', NULL, NULL
+   , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL)
+   ");
 
   variable_set("cas_access",  "0");
   variable_set("cas_attributes",  array(
@@ -117,11 +137,11 @@ node/*/edit/*");
   //Play nicely with the ucb_mma module
   if (module_exists('ucb_mma')) {
     variable_set("cas_login_form",  "0");
-  } 
-  else {
-  	variable_set("cas_login_form",  "2");
   }
-  
+  else {
+    variable_set("cas_login_form",  "2");
+  }
+
   // alias logout to caslogout
   path_set_alias('caslogout', 'logout');
 
@@ -139,9 +159,9 @@ function ucb_cas_disable() {
  */
 function ucb_cas_uninstall() {
   /* Remove modules */
-	$sub_modules = explode(',', SUBMODULES);  
+  $sub_modules = explode(',', SUBMODULES);
 
-	module_disable($sub_modules, TRUE);
+  module_disable($sub_modules, TRUE);
   foreach ($sub_modules as $sm) {
     drupal_uninstall_module($sm);
   }
@@ -151,7 +171,7 @@ function ucb_cas_uninstall() {
   /* Clear settings */
   // most settings are removed by uninstalling the sub modules.
   variable_del("ucb_cas_sub_modules");
-  
+
   // remove alias logout to caslogout
   path_set_alias('caslogout', NULL);
 
