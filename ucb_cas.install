@@ -33,7 +33,6 @@ function ucb_cas_requirements($phase) {
     if (count($paths) > 0) {
       $msg .= "\n<p>Please remove these directories and any files they contain: <br/><ul><li>" . implode('<li> ', $paths) . "</ul></p>";
     }
-    //      if (!function_exists('cas_phpcas_attributes')) {
     if ((count($paths) > 0 ) || (count($enabled) > 0)) {
       $requirements['ucb_cas'] = array(
         'title' => $t('UCB CAS'),
@@ -66,30 +65,29 @@ function ucb_cas_install() {
   /**** Settings ****/
   /* LDAP */
 
-  /* disable
-   $prod_ldap_server = 'ldap.berkeley.edu';
-   $test_ldap_server = 'ldap-test.berkeley.edu';
+  $prod_ldap_server = 'ldap.berkeley.edu';
+  $test_ldap_server = 'ldap-test.berkeley.edu';
 
-   //If they had ldap installed earlier they might already have ucb ldap servers defined
-   //if so disable them and add ones we know to be correct.
-   $result_max = db_query("SELECT MAX(sid) as max_sid from `ldapauth`");
-   $max_sid = db_result($result_max);
-   //var_dump($max_sid);
-   //FIXME: printf *&$#!
-   //$result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN (%prod, %test)", array('%prod' => $prod_ldap_server, '%test' => $test_ldap_server));
-   //$result = db_query("SELECT sid, name FROM  {ldapauth} WHERE server IN (%s, %s)", array($prod_ldap_server, $test_ldap_server));
-   $result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN ('$prod_ldap_server', '$test_ldap_server')");
+  //If they had ldap installed earlier they might already have ucb ldap servers defined
+  //if so disable them and add ones we know to be correct.
+  $result_max = db_query("SELECT MAX(sid) as max_sid from `ldapauth`");
+  $max_sid = db_result($result_max);
+  //var_dump($max_sid);
+  //FIXME: printf *&$#!
+  //$result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN (%prod, %test)", array('%prod' => $prod_ldap_server, '%test' => $test_ldap_server));
+  //$result = db_query("SELECT sid, name FROM  {ldapauth} WHERE server IN (%s, %s)", array($prod_ldap_server, $test_ldap_server));
+  $result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN ('$prod_ldap_server', '$test_ldap_server')");
 
-   $i=1;
-   while ($r = db_fetch_array($result)) {
-   $sid = $max_sid + $i;
-   $ret[] = update_sql("UPDATE ldapauth set sid = $sid, name = '". $r['name'] . "-DISABLED', status = 0 WHERE sid = " . $r['sid']);
-   $i++;
-   //Notify the user
-   drupal_set_message(t("Your ldap servers have been updated at ") . l("/admin/settings/ldap/ldapauth/list", '/admin/settings/ldap/ldapauth/list') . '.', 'status', FALSE);
-   watchdog('ucb_cas', "Replaced existing ldap server: %server", array('%server' => $r['name']), WATCHDOG_NOTICE, l(t("View LDAP Servers"), $base_url . '/admin/settings/ldap/ldapauth/list') );
-   }
-   */
+  $i=1;
+  while ($r = db_fetch_array($result)) {
+    $sid = $max_sid + $i;
+    $ret[] = update_sql("UPDATE ldapauth set sid = $sid, name = '". $r['name'] . "-DISABLED', status = 0 WHERE sid = " . $r['sid']);
+    $i++;
+    //Notify the user
+    drupal_set_message(t("Your ldap servers have been updated at ") . l("/admin/settings/ldap/ldapauth/list", '/admin/settings/ldap/ldapauth/list') . '.', 'status', FALSE);
+    watchdog('ucb_cas', "Replaced existing ldap server: %server", array('%server' => $r['name']), WATCHDOG_NOTICE, l(t("View LDAP Servers"), $base_url . '/admin/settings/ldap/ldapauth/list') );
+  }
+
 
   /*
    * ucb_envconf-6.x depends on these sids being 1 (test) and 2 (prod).
