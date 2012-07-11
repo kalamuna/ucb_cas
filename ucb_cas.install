@@ -8,25 +8,63 @@ function ucb_cas_requirements($phase) {
 
   if ($phase == 'install') {
     $paths = array();
-    foreach ($sub_modules as $sm) {
-      $path = drupal_get_path('module', $sm);
-      // If ucb_cas is in the path, it's ours
-      if (strpos($path, 'ucb_cas') === false) {
-        if (!in_array($path, $paths)) $paths[] = $path;
+    $enabled = array();
+
+    $args = array_merge($sub_modules, array('ucb_cas'));
+    /*
+     *  Disable any ldap modules that aren't ours. Don't have them disable cas modules because,
+     *  it's not necessary and if they get zealous and *uninstall* the cas module they'll loose
+     *  their cas_users data.
+     */
+    $result = db_query("SELECT name, status, filename from {system} WHERE name IN (" . db_placeholders($sub_modules, 'text') . ") and filename NOT LIKE '%%%s%%'", $args);
+    while ($r = db_fetch_array($result)) {
+      if ((strpos($r['name'], 'cas') === FALSE) && ($r['STATUS'] = 1)) {
+        $enabled[] = $r['name'];
       }
+      $paths[] = preg_replace('@/[^/.]+.module$@', '', $r['filename']);
     }
-    if (count($paths) > 0 ) {
-      $msg = "The UCB CAS module is trying to install modules which already exist on your site.  <p>1. Please ensure these modules are disabled at admin/build/modules.<br/>2. Then remove these files: <br/><ul><li>" . implode('<li> ', $paths) . "</ul>";
-      if (!function_exists('cas_phpcas_attributes')) {
-        $requirements['cas_attributes'] = array(
+
+
+    $msg = "The UCB CAS module is trying to install modules which already exist on your site.";
+
+    if (count($enabled) > 0) {
+      $msg .= "<p>Please disable these modules at admin/build/modules.<br/><ul><li>" . implode('<li> ', $enabled) . "</ul></p>";
+    }
+    if (count($paths) > 0) {
+      $msg .= "<p>Please remove these directories and any files they contain: <br/><ul><li>" . implode('<li> ', $paths) . "</ul></p>";
+    }
+    //      if (!function_exists('cas_phpcas_attributes')) {
+    if ((count($paths) > 0 ) || (count($enabled) > 0)) {
+      $requirements['ucb_cas'] = array(
         'title' => $t('UCB CAS'),
         'value' => $t('Conflict'),
         'severity' => REQUIREMENT_ERROR,
         'description' => $t($msg),
-        );
-      }
+      );
     }
+    //      }
+
+    /*
+     * if they have ldap_integration installed, they should uninstall it. Otherwise
+     * you loose your administrative menus for ldap_integration. Sometimes they come back
+     * if you do a manual  disable/enable of ldapauth, but not always
+
+
+     if (module_exists('ldapauth')) {
+     $msg = "The ldapauth module is enabled on your site.  Before we can proceed you must disable AND uninstall this module.";
+     if (!function_exists('cas_phpcas_attributes')) {
+     $requirements['ucb_cas'] = array(
+     'title' => $t('UCB CAS'),
+     'value' => $t('Conflict'),
+     'severity' => REQUIREMENT_ERROR,
+     'description' => $t($msg),
+     );
+     }
+     }
+     */
   }
+
+
   return $requirements;
 }
 
@@ -34,6 +72,8 @@ function ucb_cas_install() {
   global $base_url;
   /* Install modules */
   $sub_modules = explode(',', SUBMODULES);
+  $ldap_msg = FALSE;
+  if (module_exists('ldapauth')) $ldap_msg = TRUE;
 
   /*
    *  Why not just make the sub_modules dependencies of ucb_cas? Since
@@ -44,44 +84,39 @@ function ucb_cas_install() {
   drupal_install_modules($sub_modules);
   drupal_set_message(t("Installed ucb_cas dependencies: ") . implode(', ', $sub_modules), 'status');
 
-  //we need path for path_set_alias
-  if (!module_exists('path')) {
-    drupal_install_modules(array('path'));
-    drupal_set_message("Enabling the path module.");
-  }
-  //drush friendly links
-  drupal_set_message("You can now login using cas at ". l(t("/cas"), 'cas') . '. (' . t("Do this in a different browser or logout of your admin account first.") . ')');
-  drupal_set_message(t("View UCB CAS recommendations at ") . l(t("/admin/user/ucbcas"), 'admin/user/ucbcas') . '.');
 
   /**** Settings ****/
   /* LDAP */
-  $prod_ldap_server = 'ldap.berkeley.edu';
-  $test_ldap_server = 'ldap-test.berkeley.edu';
 
-  //If they had ldap installed earlier they might already have ucb ldap servers defined
-  //if so disable them and add ones we know to be correct.
-  $result_max = db_query("SELECT MAX(sid) as max_sid from `ldapauth`");
-  $max_sid = db_result($result_max);
-  //var_dump($max_sid);
-  //FIXME: printf *&$#!
-  //$result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN (%prod, %test)", array('%prod' => $prod_ldap_server, '%test' => $test_ldap_server));
-  //$result = db_query("SELECT sid, name FROM  {ldapauth} WHERE server IN (%s, %s)", array($prod_ldap_server, $test_ldap_server));
-  $result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN ('$prod_ldap_server', '$test_ldap_server')");
+  /* disable
+   $prod_ldap_server = 'ldap.berkeley.edu';
+   $test_ldap_server = 'ldap-test.berkeley.edu';
 
-  $i=1;
-  while ($r = db_fetch_array($result)) {
-    $sid = $max_sid + $i;
-    update_sql("UPDATE ldapauth set sid = $sid, name = '". $r['name'] . "-DISABLED', status = 0 WHERE sid = " . $r['sid']);
-    $i++;
-    //Notify the user
-    drupal_set_message(t("Your ldap servers have been updated at ") . l("/admin/settings/ldap/ldapauth/list", '/admin/settings/ldap/ldapauth/list') . '.', 'status', FALSE);
-    watchdog('ucb_cas', "Replaced existing ldap server: %server", array('%server' => $r['name']), WATCHDOG_NOTICE, l(t("View LDAP Servers"), $base_url . '/admin/settings/ldap/ldapauth/list') );
-  }
+   //If they had ldap installed earlier they might already have ucb ldap servers defined
+   //if so disable them and add ones we know to be correct.
+   $result_max = db_query("SELECT MAX(sid) as max_sid from `ldapauth`");
+   $max_sid = db_result($result_max);
+   //var_dump($max_sid);
+   //FIXME: printf *&$#!
+   //$result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN (%prod, %test)", array('%prod' => $prod_ldap_server, '%test' => $test_ldap_server));
+   //$result = db_query("SELECT sid, name FROM  {ldapauth} WHERE server IN (%s, %s)", array($prod_ldap_server, $test_ldap_server));
+   $result = db_query("SELECT sid, name FROM  `ldapauth` WHERE  `server` IN ('$prod_ldap_server', '$test_ldap_server')");
+
+   $i=1;
+   while ($r = db_fetch_array($result)) {
+   $sid = $max_sid + $i;
+   $ret[] = update_sql("UPDATE ldapauth set sid = $sid, name = '". $r['name'] . "-DISABLED', status = 0 WHERE sid = " . $r['sid']);
+   $i++;
+   //Notify the user
+   drupal_set_message(t("Your ldap servers have been updated at ") . l("/admin/settings/ldap/ldapauth/list", '/admin/settings/ldap/ldapauth/list') . '.', 'status', FALSE);
+   watchdog('ucb_cas', "Replaced existing ldap server: %server", array('%server' => $r['name']), WATCHDOG_NOTICE, l(t("View LDAP Servers"), $base_url . '/admin/settings/ldap/ldapauth/list') );
+   }
+   */
 
   /*
-   * ucb_envconf-6.x depends on these sids being 1 (test) and 2 (prod). 
+   * ucb_envconf-6.x depends on these sids being 1 (test) and 2 (prod).
    */
-   db_query("INSERT INTO `ldapauth` (`sid`, `name`, `status`, `server`, `port`, `tls`, `encrypted`, `basedn`
+  $ret_ins = db_query("INSERT INTO `ldapauth` (`sid`, `name`, `status`, `server`, `port`, `tls`, `encrypted`, `basedn`
    , `user_attr`, `mail_attr`, `binddn`, `bindpw`, `login_php`, `filter_php`, `weight`, `ldapdata_binddn`
    , `ldapdata_bindpw`, `ldapdata_rwattrs`, `ldapdata_roattrs`, `ldapdata_mappings`, `ldapdata_attrs`
    , `ldapdata_filter_php`, `ldapgroups_in_dn`, `ldapgroups_dn_attribute`, `ldapgroups_attr`, `ldapgroups_in_attr`
@@ -93,6 +128,26 @@ function ucb_cas_install() {
    (2, 'ldap.berkeley.edu', 1, 'ldap.berkeley.edu', 389, 0, 0, 'ou=people,dc=berkeley,dc=edu', 'uid', 'mail', '', '', NULL, NULL
    , 0, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 0, NULL, NULL, 0, 0, NULL, NULL, NULL, 0, NULL, NULL)
    ");
+
+  if ($ret_ins === FALSE) $ret[] = 'Failed to insert ldap_servers';
+
+  //drush friendly links
+  drupal_set_message("You can now login using cas at ". l(t("/cas"), 'cas') . '. (' . t("Do this in a different browser or logout of your admin account first.") . ')');
+  drupal_set_message(t("View UCB CAS recommendations at ") . l(t("/admin/user/ucbcas"), 'admin/user/ucbcas') . '.');
+
+  /*
+   * Tried to remedy this by doing module_disable/module_enable both here and in hook_update_N.
+   * Doing this manually seems to be the only way...
+   */
+  if ($ldap_msg === TRUE) {
+    drupal_set_message("Because you were previously using the ldap_integration module, you should manually disable, then re-enable ldapauth, ldapdata and ldapgroups. Until you do this, their admin menu items may not appear. (Just disable these, do not *uninstall* them.)", 'warning');
+  }
+
+  //we need path for path_set_alias
+  if (!module_exists('path')) {
+    drupal_install_modules(array('path'));
+    drupal_set_message("Enabling the path module.");
+  }
 
   variable_set("cas_access",  "0");
   variable_set("cas_attributes",  array(
@@ -145,6 +200,7 @@ node/*/edit/*");
   // alias logout to caslogout
   path_set_alias('caslogout', 'logout');
 
+
 }
 
 /**
@@ -176,4 +232,14 @@ function ucb_cas_uninstall() {
   path_set_alias('caslogout', NULL);
 
 }
+/**
+ * Implementation of hook_update_N().
+ */
+function ucb_cas_update_6101(&$sandbox = NULL) {
+  $ret = array();
 
+  module_disable(array('ldapauth'));
+  module_enable(array('ldapauth', 'ldapdata', 'ldapgroups'));
+
+  return $ret;
+}
