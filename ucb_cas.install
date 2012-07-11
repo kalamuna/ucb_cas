@@ -42,29 +42,7 @@ function ucb_cas_requirements($phase) {
         'description' => $t($msg),
       );
     }
-    //      }
-
-    /*
-     * if they have ldap_integration installed, they should uninstall it. Otherwise
-     * you loose your administrative menus for ldap_integration. Sometimes they come back
-     * if you do a manual  disable/enable of ldapauth, but not always
-
-
-     if (module_exists('ldapauth')) {
-     $msg = "The ldapauth module is enabled on your site.  Before we can proceed you must disable AND uninstall this module.";
-     if (!function_exists('cas_phpcas_attributes')) {
-     $requirements['ucb_cas'] = array(
-     'title' => $t('UCB CAS'),
-     'value' => $t('Conflict'),
-     'severity' => REQUIREMENT_ERROR,
-     'description' => $t($msg),
-     );
-     }
-     }
-     */
   }
-
-
   return $requirements;
 }
 
