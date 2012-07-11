@@ -192,6 +192,12 @@ you if there is anything wrong.
 
 5. Run update.php.
 
+If UCB CAS finds that you have setup LDAP servers, it will rename, and
+disable them, but they will be preserved in case you need to refer
+back to them.  Then it will install LDAP servers with parameters known
+to work. If you are using UCB CAS with UCB Environments
+Configurations, it's important that your LDAP servers have the "sids"
+(see the database) specified by ucb_cas.install.
 
 SETUP A CALNET-AUTHENTICATED ADMINISTRATOR
 ------------------------------------------
