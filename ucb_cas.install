@@ -28,10 +28,10 @@ function ucb_cas_requirements($phase) {
     $msg = "The UCB CAS module is trying to install modules which already exist on your site.";
 
     if (count($enabled) > 0) {
-      $msg .= "<p>Please disable these modules at admin/build/modules.<br/><ul><li>" . implode('<li> ', $enabled) . "</ul></p>";
+      $msg .= "\n<p>Please disable these modules at admin/build/modules.<br/><ul><li>" . implode('<li> ', $enabled) . "</ul></p>";
     }
     if (count($paths) > 0) {
-      $msg .= "<p>Please remove these directories and any files they contain: <br/><ul><li>" . implode('<li> ', $paths) . "</ul></p>";
+      $msg .= "\n<p>Please remove these directories and any files they contain: <br/><ul><li>" . implode('<li> ', $paths) . "</ul></p>";
     }
     //      if (!function_exists('cas_phpcas_attributes')) {
     if ((count($paths) > 0 ) || (count($enabled) > 0)) {
