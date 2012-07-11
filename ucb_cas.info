@@ -5,4 +5,5 @@ name = " UCB CAS"
 package = "Central Authentication Service"
 project = "ucb_cas"
 version = "6.x-1.1-beta1"
+project = "ucb_cas"
 project status url = http://drupal-apps.berkeley.edu/fserver
