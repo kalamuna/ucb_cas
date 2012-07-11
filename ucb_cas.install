@@ -18,12 +18,11 @@ function ucb_cas_requirements($phase) {
      */
     $result = db_query("SELECT name, status, filename from {system} WHERE name IN (" . db_placeholders($sub_modules, 'text') . ") and filename NOT LIKE '%%%s%%'", $args);
     while ($r = db_fetch_array($result)) {
-      if ((strpos($r['name'], 'cas') === FALSE) && ($r['STATUS'] = 1)) {
+      if ((strpos($r['name'], 'cas') === FALSE) && ($r['status'] == 1)) {
         $enabled[] = $r['name'];
       }
       $paths[] = preg_replace('@/[^/.]+.module$@', '', $r['filename']);
     }
-
 
     $msg = "The UCB CAS module is trying to install modules which already exist on your site.";
 
