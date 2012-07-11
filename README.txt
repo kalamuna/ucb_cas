@@ -17,8 +17,9 @@ TABLE OF CONTENTS
 *   Setup a Calnet-authenticated Administrator
 *   Administrator "back door" for lockouts
 *   Disabling 
-*  Uninstalling 
+*   Uninstalling 
     *   Uninstalling/re-installing and preserving your Calnet users (Important)
+*  Upgrading to a new version of ucb_cas
 *  Configuration Details
 *  Launching your site (Important)
 *  FAQ
@@ -326,6 +327,27 @@ will no longer be the owners of any content that they created. The sql
 solution above will preserve the users association to their content.
 
 
+UPGRADING TO A NEW VERSION OF UCB_CAS
+-------------------------------------
+Follow this procedure to upgrade ucb_cas:
+
+Upgrade the module on your developement site first and test it.
+Before you upgrade the module on your live site, make a backup of your
+live site's database just in case there is a problem.
+
+(Do not disable and uninstall ucb_cas at /admin/modules.)
+
+1. delete the ucb_cas folder form your modules directory
+
+2. replace it with the new version of the module downloaded which you
+downloaded and unarchived
+
+3. run update.php on your drupal site
+
+The new version should now be working.  Test it on your development
+site to make sure that logging in and out of the site is working.
+
+
 CONFIGURATION DETAILS
 ---------------------
 
@@ -441,6 +463,13 @@ Calnet authenticate to create a new account for themselves.  The
 account gets created, but if they try to edit it, they get a
 validation error on the email field since it is the email that is
 already in use by User 1. To fix this, change the User 1 email.
+
+Q. I am using Libraries API and it doesn't work to put phpCAS under
+sites/all/modules/ucb_cas/cas.  I get errors.
+
+A. There is a patch (http://drupal.org/node/1394666#comment-5434276)
+for cas-7.x.  This patch needs to be backported to cas-6.x.  You could
+move the phpCAS library manually for now.
 
 AUTHORS
 -------
