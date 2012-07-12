@@ -1,3 +1,8 @@
+ucb_cas-6.x-1.2-beta1
+=====================
+* Better conflict checking on installation
+* Not upgrading to ldap_integration-6.x-1.0-beta3 because testing with that module failed
+
 ucb_cas-6.x-1.1-beta1
 =====================
 * Upgrade phpCAS to 1.3.1
